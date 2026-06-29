@@ -17,7 +17,7 @@
 EasyShop is a production-grade full-stack e-commerce application built with **Next.js 14**, **TypeScript**, and **MongoDB 7.0**, deployed on **Amazon EKS** using a fully automated DevSecOps and GitOps pipeline.
 
 **What this project demonstrates end-to-end:**
-- 🔄 **10-stage Jenkins CI pipeline** — clean workspace → unit tests → SonarQube SAST → Trivy FS scan → Docker build → Trivy image scan → DockerHub push → manifest update → GitOps commit
+- 🔄 **10-stage Jenkins CI pipeline** — clean workspace → unit tests → SonarQube SAST → Trivy FS scan → Docker build → Trivy image scan → DockerHub push → manifest update → GitOps commit; Jenkins and SonarQube run locally on **WSL Ubuntu**
 - 🔒 **Security at every layer** — code analysis, filesystem scan, image CVE scan, non-root containers, Kubernetes Secrets
 - ☸️ **GitOps via ArgoCD** — manifest in Git is the single source of truth; every Jenkins build auto-commits the new image tag and ArgoCD syncs EKS with no manual intervention
 - ☁️ **Terraform IaC on AWS** — EKS cluster (`easyshop-eks-cluster`) in `us-east-1` with VPC, public/private/intra subnets across 2 AZs, SPOT node group (`t3.small`)
@@ -126,8 +126,8 @@ easyshop-devsecops-gitops/
 ```
 Developer pushes to main
          │
-         ▼ (GitHub webhook)
-    Jenkins CI — 10 stages
+         ▼ (GitHub webhook → ngrok → WSL)
+    Jenkins CI — WSL Ubuntu — 10 stages
          │
          ├─ 1. Clean Workspace
          ├─ 2. Checkout Code (main branch)
@@ -252,7 +252,7 @@ All infrastructure is in [`/terraform`](./terraform/) — version-controlled, re
 | `hashicorp/time` | `~> 0.12` |
 | Terraform | `>= 1.5` |
 
-### Network Layout (`provider.tf` locals)
+### Network Layout (`provider.tf` + `vpc.tf`)
 
 | Setting | Value |
 |---|---|
@@ -263,6 +263,35 @@ All infrastructure is in [`/terraform`](./terraform/) — version-controlled, re
 | Public subnets | `10.0.1.0/24`, `10.0.2.0/24` |
 | Private subnets | `10.0.3.0/24`, `10.0.4.0/24` |
 | Intra subnets (control plane) | `10.0.5.0/24`, `10.0.6.0/24` |
+| NAT Gateway | **Single NAT gateway** (cost-optimised) |
+| Public IP on launch | Enabled (`map_public_ip_on_launch = true`) |
+| Public subnet tag | `kubernetes.io/role/elb = 1` (for internet-facing ALB) |
+| Private subnet tag | `kubernetes.io/role/internal-elb = 1` (for internal ALB) |
+| VPC module | `terraform-aws-modules/vpc/aws ~> 4.0` |
+
+```
+AWS Cloud (us-east-1)
+└── VPC: easyshop-eks-cluster (10.0.0.0/16)
+    │
+    ├── us-east-1a                         │  us-east-1b
+    │   ├── Public  10.0.1.0/24  ──────────┼── Public  10.0.2.0/24
+    │   ├── Private 10.0.3.0/24  ──────────┼── Private 10.0.4.0/24
+    │   └── Intra   10.0.5.0/24  ──────────┼── Intra   10.0.6.0/24
+    │                                       │
+    ├── Single NAT Gateway (on public subnet)
+    │   └── Outbound internet for private & intra subnets
+    │
+    ├── Public subnets  [kubernetes.io/role/elb = 1]
+    │   └── Internet-facing AWS ALB ← easyshop-ingress
+    │
+    ├── Private subnets [kubernetes.io/role/internal-elb = 1]
+    │
+    └── EKS: easyshop-eks-cluster
+        ├── Control plane  → intra subnets
+        └── Node group: easyshop-ng (public subnets)
+            └── t3.small SPOT, 1 node, 35GB disk
+                Addons: coredns · kube-proxy · vpc-cni
+```
 
 ### EKS Cluster (`eks.tf`)
 
@@ -474,18 +503,64 @@ terraform output
 
 ### 2. Jenkins CI Setup
 
-#### Check Jenkins
+> [!NOTE]
+> Jenkins and SonarQube run **locally on WSL Ubuntu** (Windows Subsystem for Linux). No EC2 instance is needed for the CI layer.
+
+#### Install Jenkins on WSL Ubuntu
 
 ```bash
+# Add Jenkins repo and key
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+  /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+sudo apt-get update && sudo apt-get install jenkins -y
+
+# Jenkins requires Java
+sudo apt install fontconfig openjdk-17-jre -y
+
+# Start Jenkins
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
 sudo systemctl status jenkins
-# If not running:
-sudo systemctl enable jenkins && sudo systemctl restart jenkins
 ```
 
-Access UI: `http://<jenkins-ip>:8080`
+#### Access Jenkins UI (WSL)
 
 ```bash
+# Get initial admin password
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Open in browser: `http://localhost:8080`
+
+> [!TIP]
+> If using WSL2, find your WSL IP with `hostname -I` and access at `http://<wsl-ip>:8080` from Windows browser.
+
+#### Install SonarQube on WSL Ubuntu
+
+```bash
+# Run SonarQube via Docker (easiest on WSL)
+docker run -d --name sonarqube \
+  -p 9000:9000 \
+  sonarqube:community
+
+# Access at http://localhost:9000
+# Default login: admin / admin (change on first login)
+```
+
+#### Install Trivy on WSL Ubuntu
+
+```bash
+sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | \
+  sudo tee -a /etc/apt/sources.list.d/trivy.list
+sudo apt-get update && sudo apt-get install trivy -y
+trivy --version
 ```
 
 #### Install Plugins
@@ -505,11 +580,11 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 | DockerHub | Username with password | `docker-hub-credentials` |
 | SonarQube token | Secret Text | (used by SonarQube server config) |
 
-#### Configure SonarQube Server
+#### Configure SonarQube Server in Jenkins
 
 **Manage Jenkins → Configure System → SonarQube Servers**
 - Name: `sonarqube`
-- URL: `http://<sonarqube-ip>:9000`
+- URL: `http://localhost:9000`
 
 #### Create Pipeline Job
 
@@ -526,8 +601,23 @@ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
 #### Setup GitHub Webhook
 
+Since Jenkins runs locally on WSL, use **ngrok** to expose it publicly for GitHub webhooks:
+
+```bash
+# Install ngrok
+curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee \
+  /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee \
+  /etc/apt/sources.list.d/ngrok.list
+sudo apt update && sudo apt install ngrok -y
+
+# Expose Jenkins port
+ngrok http 8080
+# Note the https forwarding URL e.g. https://abc123.ngrok.io
+```
+
 **GitHub repo → Settings → Webhooks → Add webhook**
-- Payload URL: `http://<jenkins-ip>:8080/github-webhook/`
+- Payload URL: `https://<ngrok-url>/github-webhook/`
 - Content type: `application/json`
 - Event: `Just the push event`
 
@@ -698,6 +788,3 @@ Cloud & Infrastructure Engineer | DevOps Practitioner
 
 ---
 
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
