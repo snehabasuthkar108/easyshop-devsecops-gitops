@@ -1,552 +1,587 @@
-# 🛍️ EasyShop - Modern E-commerce Platform
+# 🛍️ EasyShop — DevSecOps & GitOps Platform on AWS EKS
 
+[![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?style=flat-square&logo=terraform)](https://www.terraform.io/)
+[![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?style=flat-square&logo=jenkins)](https://www.jenkins.io/)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-326CE5?style=flat-square&logo=kubernetes)](https://kubernetes.io/)
+[![ArgoCD](https://img.shields.io/badge/ArgoCD-GitOps-EF7B4D?style=flat-square&logo=argo)](https://argo-cd.readthedocs.io/)
+[![SonarQube](https://img.shields.io/badge/SonarQube-Code%20Quality-4E9BCD?style=flat-square&logo=sonarqube)](https://www.sonarqube.org/)
+[![Trivy](https://img.shields.io/badge/Trivy-Security%20Scan-1904DA?style=flat-square&logo=aquasecurity)](https://trivy.dev/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-8.1.1-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
-[![Redux](https://img.shields.io/badge/Redux-2.2.1-purple?style=flat-square&logo=redux)](https://redux.js.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, TypeScript, and MongoDB. This project has been enhanced with a production-style DevSecOps and GitOps implementation using Docker, Kubernetes, Jenkins, ArgoCD, Terraform, Amazon EKS, SonarQube, and Trivy to demonstrate end-to-end CI/CD automation, security scanning, and cloud-native deployments.
+---
 
-## ✨ Features
+EasyShop is a full-stack e-commerce application built with **Next.js 14**, **TypeScript**, and **MongoDB** — enhanced with a production-grade **DevSecOps and GitOps pipeline** on **Amazon EKS**.
 
-- 🎨 Modern and responsive UI with dark mode support
-- 🔐 Secure JWT-based authentication
-- 🛒 Real-time cart management with Redux
-- 📱 Mobile-first design approach
-- 🔍 Advanced product search and filtering
-- 💳 Secure checkout process
-- 📦 Multiple product categories
-- 👤 User profiles and order history
-- 🌙 Dark/Light theme support
+The project demonstrates:
+- 🔄 **10-stage Jenkins CI pipeline** with automated unit tests, code quality, security scanning, image build/push, and GitOps manifest update
+- 🔒 **Security-first**: Trivy filesystem scan + Docker image scan, SonarQube static analysis, non-root container execution
+- ☸️ **GitOps delivery**: ArgoCD watches the repo and auto-syncs Kubernetes manifests to EKS on every merge
+- ☁️ **Infrastructure as Code**: Full AWS stack provisioned with Terraform (EKS, VPC, subnets, NAT Gateway, security groups)
+- 🐳 **Local dev**: Docker Compose with 3 services, health checks, and automatic DB migration
 
-## 🏗️ Architecture
+> 🔗 **Repo:** [github.com/snehabasuthkar108/easyshop-devsecops-gitops](https://github.com/snehabasuthkar108/easyshop-devsecops-gitops)
+> 🐳 **DockerHub:** [hub.docker.com/u/sneha108](https://hub.docker.com/u/sneha108)
 
-EasyShop follows a three-tier architecture pattern:
+---
 
-### 1. Presentation Tier (Frontend)
-- Next.js React Components
-- Redux for State Management
-- Tailwind CSS for Styling
-- Client-side Routing
-- Responsive UI Components
+## 📌 Table of Contents
 
-### 2. Application Tier (Backend)
-- Next.js API Routes
-- Business Logic
-- Authentication & Authorization
-- Request Validation
-- Error Handling
-- Data Processing
+- [Application Features](#-application-features)
+- [Architecture Overview](#-architecture-overview)
+- [Jenkins CI Pipeline — All 10 Stages](#-jenkins-ci-pipeline--all-10-stages)
+- [Docker Setup](#-docker-setup)
+- [Infrastructure — Terraform on AWS](#-infrastructure--terraform-on-aws)
+- [Kubernetes Resources](#-kubernetes-resources)
+- [Security Implementation](#-security-implementation)
+- [Prerequisites](#-prerequisites)
+- [Setup Guide](#-setup-guide)
+  - [1. Provision Infrastructure with Terraform](#1-provision-infrastructure-with-terraform)
+  - [2. Jenkins CI Setup](#2-jenkins-ci-setup)
+  - [3. ArgoCD GitOps CD Setup](#3-argocd-gitops-cd-setup)
+  - [4. Nginx Ingress Controller](#4-nginx-ingress-controller)
+  - [5. TLS with Cert-Manager](#5-tls-with-cert-manager)
+- [Local Development with Docker Compose](#-local-development-with-docker-compose)
+- [Deployment](#-deployment)
 
-### 3. Data Tier (Database)
-- MongoDB Database
-- Mongoose ODM
-- Data Models
-- CRUD Operations
-- Data Validation
+---
 
-## DevSecOps Architecture
+## ✨ Application Features
 
-The project follows a GitOps-driven CI/CD workflow:
+| Feature | Details |
+|---|---|
+| 🎨 Modern UI | Responsive design with Dark / Light mode toggle |
+| 🔐 Authentication | JWT + NextAuth — stateless, secure sessions |
+| 🛒 Cart | Real-time cart management with Redux state |
+| 📱 Mobile-first | Tailwind CSS responsive layout |
+| 🔍 Search | Advanced product search and filtering |
+| 👤 Profile | User profiles and order history |
+| 📦 Categories | Multi-category product catalog |
+| 💳 Checkout | Secure checkout process |
 
-GitHub → Jenkins → SonarQube → Trivy → DockerHub → ArgoCD → Amazon EKS
+---
 
-### CI/CD Workflow
+## 🏗️ Architecture Overview
 
-1. Developers push code changes to GitHub.
-2. Jenkins automatically triggers the pipeline.
-3. SonarQube performs static code analysis.
-4. Trivy scans the filesystem and Docker images for vulnerabilities.
-5. Docker images are built and pushed to DockerHub.
-6. Kubernetes manifests are updated automatically.
-7. ArgoCD detects Git changes and synchronizes the EKS cluster.
-8. The latest version of EasyShop is deployed to Kubernetes.
+### Application — Three-Tier Architecture
 
-## ☁️ Infrastructure Provisioning
+```
+┌────────────────────────────────────────────────────────────┐
+│                    Presentation Tier                       │
+│       Next.js 14 Components │ Redux │ Tailwind CSS         │
+├────────────────────────────────────────────────────────────┤
+│                    Application Tier                        │
+│  Next.js API Routes │ NextAuth │ JWT │ Request Validation  │
+├────────────────────────────────────────────────────────────┤
+│                       Data Tier                            │
+│          MongoDB 7.0 │ Mongoose ODM │ CRUD Operations      │
+└────────────────────────────────────────────────────────────┘
+```
 
-Infrastructure is provisioned using Terraform on AWS.
+### DevSecOps + GitOps Flow
 
-Provisioned resources include:
+```
+ Developer pushes code
+         │
+         ▼
+      GitHub (main branch)
+         │
+         │  Webhook trigger
+         ▼
+      Jenkins (CI — 10 stages)
+         │
+         ├─ Clean Workspace
+         ├─ Checkout Code
+         ├─ Install Dependencies (npm install)
+         ├─ Run Unit Tests (npm test)
+         ├─ SonarQube Analysis (static code scan)
+         ├─ Trivy FS Scan (filesystem vulnerabilities)
+         ├─ Docker Build (sneha108/easy-shop-app:<BUILD_NUMBER>)
+         ├─ Trivy Image Scan (image CVE scan — HIGH/CRITICAL)
+         ├─ Push to DockerHub (tagged + latest)
+         └─ Update K8s Manifest + Git Commit + Push
+                   │
+                   │  Git change detected
+                   ▼
+               ArgoCD (GitOps sync)
+                   │
+                   ▼
+           Amazon EKS Cluster
+           (kubernetes/08-easyshop-deployment.yaml updated)
+```
 
-* Amazon EKS Cluster
-* VPC
-* Public and Private Subnets
-* NAT Gateway
-* EKS Managed Node Group
-* Security Groups
+---
+
+## 🔄 Jenkins CI Pipeline — All 10 Stages
+
+The pipeline is defined in [`Jenkinsfile`](./Jenkinsfile). Every stage is explicitly defined — no shared libraries or external Groovy scripts needed.
+
+| # | Stage | What It Does |
+|---|---|---|
+| 1 | **Clean Workspace** | Wipes Jenkins workspace before every build |
+| 2 | **Checkout Code** | Clones `main` branch from this repo |
+| 3 | **Install Dependencies** | Runs `npm install` |
+| 4 | **Run Unit Tests** | Runs `npm test` (non-blocking — pipeline continues on failure) |
+| 5 | **SonarQube Analysis** | Static code analysis via `sonar-scanner` (project key: `easyshop`) |
+| 6 | **Trivy FS Scan** | Scans filesystem for HIGH/CRITICAL vulnerabilities before build |
+| 7 | **Build Application Image** | Builds `sneha108/easy-shop-app:<BUILD_NUMBER>` |
+| 8 | **Trivy Image Scan** | Scans the built Docker image for HIGH/CRITICAL CVEs |
+| 9 | **Push Image to DockerHub** | Pushes both `:<BUILD_NUMBER>` and `:latest` tags |
+| 10 | **Update K8s Manifest + Commit** | Updates `kubernetes/08-easyshop-deployment.yaml` with new image tag and pushes to GitHub — ArgoCD picks this up automatically |
+
+### Environment Variables Used in Pipeline
+
+| Variable | Value |
+|---|---|
+| `DOCKER_IMAGE_NAME` | `sneha108/easy-shop-app` |
+| `DOCKER_MIGRATION_IMAGE_NAME` | `sneha108/easy-shop-migration` |
+| `IMAGE_TAG` | `${BUILD_NUMBER}` (auto-increments) |
+| `DOCKER_CREDENTIALS` | `docker-hub-credentials` (Jenkins credential ID) |
+| `SONARQUBE_SERVER` | `sonarqube` (Jenkins SonarQube server name) |
+| `GIT_REPO` | `https://github.com/snehabasuthkar108/easyshop-devsecops-gitops.git` |
+
+---
+
+## 🐳 Docker Setup
+
+### Multi-Stage Dockerfile
+
+The [`Dockerfile`](./Dockerfile) uses a **two-stage build** to keep the production image lean and secure:
+
+```
+Stage 1 — Builder (node:18-alpine)
+  ├── Install build dependencies (python3, make, g++)
+  ├── npm ci (clean install from lockfile)
+  └── npm run build (Next.js production build)
+
+Stage 2 — Runner (node:18-alpine)
+  ├── Create non-root user: appuser (group: appgroup)
+  ├── Copy only built artifacts (.next/standalone, static, public)
+  ├── chown to appuser
+  ├── Switch USER to appuser
+  └── CMD: node server.js (port 3000)
+```
+
+> **Security note:** The final image runs as a non-root user (`appuser`) and contains no source code, dev dependencies, or build tools — only the compiled Next.js standalone output.
+
+### Docker Compose — Local Development
+
+[`docker-compose.yml`](./docker-compose.yml) spins up the full stack locally with 3 services:
+
+| Service | Image | Port | Notes |
+|---|---|---|---|
+| `mongodb` | `mongo:7.0` | `27017` | Health check via `mongosh ping`; data persisted in `mongodb_data` volume |
+| `migration` | Built from `scripts/Dockerfile.migration` | — | Runs DB migrations; starts only after MongoDB is healthy |
+| `app` | Built from `Dockerfile` | `3000` | Starts only after migration completes successfully |
+
+All services share the `easyshop-network` bridge network.
+
+#### Run locally
+
+```bash
+# Copy and configure your environment
+cp .env.local.example .env.local
+# Edit .env.local with your MONGODB_URI, NEXTAUTH_SECRET, JWT_SECRET
+
+# Start all services
+docker compose up --build
+
+# App available at http://localhost:3000
+```
+
+---
+
+## ☁️ Infrastructure — Terraform on AWS
+
+All infrastructure is provisioned using **Terraform** — version-controlled, reproducible, and auditable. Terraform files are in [`/terraform`](./terraform/).
+
+### AWS Resources
+
+```
+AWS Cloud (eu-west-1)
+└── VPC
+    ├── Public Subnets   → NAT Gateway │ Bastion Host (EC2)
+    ├── Private Subnets  → EKS Managed Node Group
+    └── Security Groups  → Controlled ingress/egress rules
+         │
+         └── Amazon EKS Cluster: tws-eks-cluster
+                  └── Managed Node Group (EC2 worker nodes)
+```
+
+| Resource | Purpose |
+|---|---|
+| Amazon EKS | Managed Kubernetes control plane |
+| VPC | Isolated network for the entire stack |
+| Public Subnets | NAT Gateway and Bastion Host |
+| Private Subnets | EKS worker nodes (not publicly accessible) |
+| NAT Gateway | Outbound internet for private subnet nodes |
+| Security Groups | Port-level access control |
+
+---
 
 ## ☸️ Kubernetes Resources
 
-The application is deployed on Amazon EKS using the following Kubernetes resources:
+Application is deployed via ArgoCD to EKS. Manifests are in [`/kubernetes`](./kubernetes/).
 
-* Namespace
-* Deployment
-* Service
-* Ingress (AWS ALB)
-* StatefulSet
-* PersistentVolumeClaim
-* ConfigMap
-* Secret
-* Horizontal Pod Autoscaler
-* Migration Job
+| Manifest | Resource | Purpose |
+|---|---|---|
+| `00-cluster-issuer.yaml` | ClusterIssuer | Let's Encrypt TLS issuer |
+| `01-namespace.yaml` | Namespace | `easyshop` isolation |
+| `02-mongodb-statefulset.yaml` | StatefulSet | MongoDB with stable storage |
+| `03-mongodb-service.yaml` | Service | Internal MongoDB access |
+| `04-configmap.yaml` | ConfigMap | Non-sensitive environment config |
+| `05-secret.yaml` | Secret | JWT secret, MongoDB credentials |
+| `06-migration-job.yaml` | Job | One-time DB schema migration |
+| `07-hpa.yaml` | HorizontalPodAutoscaler | Auto-scale on CPU/memory |
+| `08-easyshop-deployment.yaml` | Deployment | App pods — **image tag updated by Jenkins** |
+| `09-easyshop-service.yaml` | Service | Internal ClusterIP routing |
+| `10-ingress.yaml` | Ingress | External HTTPS via Nginx + TLS |
 
-## Security Implementation
+---
 
-* Multi-stage Docker builds
-* Non-root container execution
-* SonarQube static code analysis
-* Trivy vulnerability scanning
-* Kubernetes Secrets for sensitive data
-* JWT and NextAuth-based authentication
+## 🔒 Security Implementation
 
-## PreRequisites
+| Layer | Control | Implementation |
+|---|---|---|
+| Code | Static Analysis | SonarQube — bugs, code smells, coverage |
+| Code | Dependency Scan | Trivy FS scan before Docker build |
+| Container | Image Scan | Trivy image scan — HIGH/CRITICAL CVEs blocked |
+| Container | Non-root execution | `appuser` (non-root) runs the app process |
+| Container | Minimal image | Multi-stage build — no dev tools in production image |
+| Kubernetes | Secrets | JWT secret and DB credentials in K8s Secrets |
+| Network | TLS/HTTPS | Cert-Manager + Let's Encrypt on Ingress |
+| Auth | Stateless tokens | JWT + NextAuth-based authentication |
 
-> [!IMPORTANT]  
-> Before you begin setting up this project, make sure the following tools are installed and configured properly on your system:
+---
 
-## Setup & Initialization <br/>
+## 📋 Prerequisites
 
-### 1. Install Terraform
-* Install Terraform<br/>
-#### Linux & macOS
+> [!IMPORTANT]
+> Ensure the following tools are installed before you begin.
+
+| Tool | Purpose | Min Version |
+|---|---|---|
+| Terraform | AWS infrastructure provisioning | v1.5+ |
+| AWS CLI | AWS API interaction | v2.x |
+| kubectl | Kubernetes cluster management | v1.28+ |
+| Docker | Container build and local dev | v24+ |
+| Helm | Kubernetes package manager (Nginx, Cert-Manager) | v3.x |
+| Git | Source control | v2.x |
+| Node.js | Local development | v18+ |
+
+---
+
+## 🚀 Setup Guide
+
+### 1. Provision Infrastructure with Terraform
+
+#### Install Terraform
+
 ```bash
 curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
 sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
 sudo apt-get update && sudo apt-get install terraform
-```
-### Verify Installation
-```bash
 terraform -v
 ```
-### Initialize Terraform
-```bash
-terraform init
-```
-### 2. Install AWS CLI
-AWS CLI (Command Line Interface) allows you to interact with AWS services directly from the command line.
+
+#### Configure AWS CLI
 
 ```bash
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-sudo apt install unzip
-unzip awscliv2.zip
+sudo apt install unzip && unzip awscliv2.zip
 sudo ./aws/install
-```
-
- ```aws configure```
-
-> #### This will prompt you to enter:<br/>
-- **AWS Access Key ID:**<br/>
-- **AWS Secret Access Key:**<br/>
-- **Default region name:**<br/>
-- **Default output format:**<br/>
-
-> [!NOTE] 
-> Make sure the IAM user you're using has the necessary permissions. You’ll need an AWS IAM Role with programmatic access enabled, along with the Access Key and Secret Key.
-
-## Getting Started
-
-> Follow the steps below to get your infrastructure up and running using Terraform:<br/>
-
-1. **Clone the Repository:**
-First, clone this repo to your local machine:<br/>
-```bash
-git clone https://github.com/LondheShubham153/tws-e-commerce-app.git
-cd terraform
-```
-2. **Generate SSH Key Pair:**
-Create a new SSH key to access your EC2 instance:
-```bash
-ssh-keygen -f terra-key
-```
-This will prompt you to create a new key file named terra-key.
-
-3. **Private key permission:** Change your private key permission:
-```bash
-chmod 400 terra-key
-```
-
-4. **Initialize Terraform:**
-Initialize the Terraform working directory to download required providers:
-```bash
-terraform init
-```
-5. **Review the Execution Plan:**
-Before applying changes, always check the execution plan:
-```bash
-terraform plan
-```
-6. **Apply the Configuration:**
-Now, apply the changes and create the infrastructure:
-```bash
-terraform apply
-```
-> Confirm with `yes` when prompted.
-
-7. **Access Your EC2 Instance;** <br/>
-After deployment, grab the public IP of your EC2 instance from the output or AWS Console, then connect using SSH:
-```bash
-ssh -i terra-key ubuntu@<public-ip>
-```
-8. **Update your kubeconfig:**
-wherever you want to access your eks wheather it is yur local machine or bastion server this command will help you to interact with your eks.
-> [!CAUTION]
-> you need to configure aws cli first to execute this command:
-
-```bash
 aws configure
 ```
 
+> [!NOTE]
+> `aws configure` will prompt for:
+> - **AWS Access Key ID**
+> - **AWS Secret Access Key**
+> - **Default region:** `eu-west-1`
+> - **Default output format:** `json`
+>
+> Your IAM user needs permissions for EKS, EC2, VPC, and IAM.
+
+#### Clone Repo & Deploy Infrastructure
+
 ```bash
-aws eks --region eu-west-1 update-kubeconfig --name tws-eks-cluster
+git clone https://github.com/snehabasuthkar108/easyshop-devsecops-gitops.git
+cd easyshop-devsecops-gitops/terraform
+
+# Generate SSH key for EC2 Bastion access
+ssh-keygen -f terra-key
+chmod 400 terra-key
+
+# Provision AWS infrastructure
+terraform init
+terraform plan
+terraform apply        # Type 'yes' when prompted
 ```
-9. **Check your cluster:**
+
+#### Connect to Bastion & Configure EKS Access
+
 ```bash
+# SSH into Bastion Host
+ssh -i terra-key ubuntu@<bastion-public-ip>
+
+# Configure AWS CLI on Bastion
+aws configure
+
+# Update kubeconfig to connect to EKS
+aws eks --region eu-west-1 update-kubeconfig --name tws-eks-cluster
+
+# Verify cluster connectivity
 kubectl get nodes
 ```
 
-## Jenkins Setup Steps
-> [!TIP]
-> Check if jenkins service is running:
+---
+
+### 2. Jenkins CI Setup
+
+#### Check Jenkins Service
 
 ```bash
 sudo systemctl status jenkins
+# If not running:
+sudo systemctl enable jenkins && sudo systemctl restart jenkins
 ```
-## Steps to Access Jenkins & Install Plugins
 
-#### 1. **Open Jenkins in Browser:**
-> Use your public IP with port 8080:
->**http://<public_IP>:8080**
+#### Access Jenkins UI
 
-#### 2. **Initial Admin password:**
-> Start the service and get the Jenkins initial admin password:
-> ```bash
-> sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-> ```
+```
+http://<jenkins-public-ip>:8080
+```
 
-#### 3. **Start Jenkins (*If Not Running*):**
-> Get the Jenkins initial admin password:
-> ```bash
-> sudo systemctl enable jenkins
-> sudo systemctl restart jenkins
-> ```
-#### 4. **Install Essential Plugins:**
-> - Navigate to:
-> **Manage Jenkins → Plugins → Available Plugins**<br/>
-> - Search and install the following:<br/>
->   - **Docker Pipeline**<br/>
->   - **Pipeline View**
+Retrieve the initial admin password:
 
-
-#### 5. **Set Up Docker & GitHub Credentials in Jenkins (Global Credentials)**<br/>
->
-> - GitHub Credentials:
->   - Go to:
-**Jenkins → Manage Jenkins → Credentials → (Global) → Add Credentials**
-> - Use:
->   - Kind: **Username with password**
->   - ID: **github-credentials**<br/>
-
-
-> - DockerHub Credentials:
-> Go to the same Global Credentials section
-> - Use:
->   - Kind: **Username with password**
->   - ID: **docker-hub-credentials**
-> [Notes:]
-> Use these IDs in your Jenkins pipeline for secure access to GitHub and DockerHub
-
-#### 6. Jenkins Shared Library Setup:
-> - `Configure Trusted Pipeline Library`:
->   - Go to:
-> **Jenkins → Manage Jenkins → Configure System**
-> Scroll to Global Pipeline Libraries section
->
-> - **Add a New Shared Library:** 
-> - **Name:** shared
-> - **Default Version:** main
-> - **Project Repository URL:** `https://github.com/<your user-name/jenkins-shared-libraries`.
->
-> [Notes:] 
-> Make sure the repo contains a proper directory structure eq: vars/<br/>
-	
-#### 7. Setup Pipeline<br/>
-> - Create New Pipeline Job<br/>
->   - **Name:** EasyShop<br/>
->   - **Type:** Pipeline<br/>
-> Press `Okey`<br/>
-
-> > In **General**<br/>
-> > - **Description:** EasyShop<br/>
-> > - **Check the box:** `GitHub project`<br/>
-> > - **GitHub Repo URL:** `https://github.com/<your user-name/tws-e-commerce-app`<br/>
->
-> > In **Trigger**<br/>
-> > - **Check the box:**`GitHub hook trigger for GITScm polling`<br/>
->
-> > In **Pipeline**<br/>
-> > - **Definition:** `Pipeline script from SCM`<br/>
-> > - **SCM:** `Git`<br/>
-> > - **Repository URL:** `https://github.com/<your user-name/tws-e-commerce-app`<br/>
-> > - **Credentials:** `github-credentials`<br/>
-> > - **Branch:** master<br/>
-> > - **Script Path:** `Jenkinsfile`<br/>
-
-#### **Fork Required Repos**<br/>
-> > Fork App Repo:<br/>
-> > * Open the `Jenkinsfile`<br/>
-> > * Change the DockerHub username to yours<br/>
->
-> > **Fork Shared Library Repo:**<br/>
-> > * Edit `vars/update_k8s_manifest.groovy`<br/>
-> > * Update with your `DockerHub username`<br/>
-> 
-> > **Setup Webhook**<br/>
-> > In GitHub:<br/>
-> >  * Go to **`Settings` → `Webhooks`**<br/>
-> >  * Add a new webhook pointing to your Jenkins URL<br/>
-> >  * Select: **`GitHub hook trigger for GITScm polling`** in Jenkins job<br/>
->
-> > **Trigger the Pipeline**<br/>
-> > Click **`Build Now`** in Jenkins
-
-#### **8. CD – Continuous Deployment Setup**<br/>
-**Prerequisites:**<br/>
-Before configuring CD, make sure the following tools are installed:<br/>
-* Installations Required:<br/>
-**kubectl**<br/>
-**AWS CLI**
-
-**SSH into Bastion Server**<br/>
-* Connect to your Bastion EC2 instance via SSH.
-
-**Note:**<br/>
-This is not the node where Jenkins is running. This is the intermediate EC2 (Bastion Host) used for accessing private resources like your EKS cluster.
-
-**8. Configure AWS CLI on Bastion Server**
-Run the AWS configure command:<br/>
 ```bash
-aws configure
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
-Add your Access Key and Secret Key when prompted.
 
-**9. Update Kubeconfig for EKS**<br/>
-Run the following important command:
-```bash
-aws eks update-kubeconfig --region eu-west-1 --name tws-eks-cluster
-```
-* This command maps your EKS cluster with your Bastion server.
-* It helps to communicate with EKS components.
+#### Install Required Plugins
 
-**10. Argo CD Setup**<br/>
-Create a Namespace for Argo CD<br/>
+**Manage Jenkins → Plugins → Available Plugins** — search and install:
+- ✅ Docker Pipeline
+- ✅ SonarQube Scanner
+- ✅ Pipeline View
+
+#### Configure Credentials
+
+**Manage Jenkins → Credentials → (Global) → Add Credentials**
+
+| Credential | Kind | Credential ID |
+|---|---|---|
+| GitHub | Username with password | `github-credentials` |
+| DockerHub | Username with password | `docker-hub-credentials` |
+
+#### Configure SonarQube Server
+
+**Manage Jenkins → Configure System → SonarQube Servers**
+
+- **Name:** `sonarqube`
+- **Server URL:** `http://<sonarqube-ip>:9000`
+- **Token:** Add as Secret Text credential
+
+#### Create Jenkins Pipeline Job
+
+1. **New Item → Pipeline** → Name it `EasyShop` → OK
+2. **General:**
+   - ✅ GitHub project
+   - URL: `https://github.com/snehabasuthkar108/easyshop-devsecops-gitops`
+3. **Build Triggers:** ✅ `GitHub hook trigger for GITScm polling`
+4. **Pipeline:**
+   - Definition: `Pipeline script from SCM`
+   - SCM: `Git`
+   - Repository URL: `https://github.com/snehabasuthkar108/easyshop-devsecops-gitops`
+   - Credentials: `github-credentials`
+   - Branch: `main`
+   - Script Path: `Jenkinsfile`
+
+#### Setup GitHub Webhook
+
+In your GitHub repo — **Settings → Webhooks → Add webhook:**
+- Payload URL: `http://<jenkins-ip>:8080/github-webhook/`
+- Content type: `application/json`
+- Event: `Just the push event`
+
+Click **Build Now** to trigger the first run.
+
+---
+
+### 3. ArgoCD GitOps CD Setup
+
+#### Install ArgoCD on EKS
+
 ```bash
 kubectl create namespace argocd
-```
-1. Install Argo CD using Manifest
-```bash
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-```
-2. Watch Pod Creation
-```bash
+
+kubectl apply -n argocd -f \
+  https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Monitor pod startup
 watch kubectl get pods -n argocd
 ```
-3. This helps monitor when all Argo CD pods are up and running.<br/>
 
-4. Check Argo CD Services
-```bash
-kubectl get svc -n argocd
-```
+#### Expose ArgoCD UI
 
-5. Change Argo CD Server Service to NodePort
 ```bash
+# Expose as NodePort
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+
+# Port-forward to access locally
+kubectl port-forward svc/argocd-server -n argocd 8080:443 --address=0.0.0.0 &
 ```
 
-11. Access Argo CD GUI<br/>
-Check Argo CD Server Port (again, post NodePort change)<br/>
+Access at: `https://<bastion-ip>:8080`
+
+#### Get Admin Password
+
 ```bash
-kubectl get svc -n argocd
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d; echo
 ```
-1. Port Forward to Access Argo CD in Browser<br/>
- Forward Argo CD service to access the GUI:
-```bash
-kubectl port-forward svc/argocd-server -n argocd <your-port>:443 --address=0.0.0.0 &
-```
-2. Replace <your-port> with a local port of your choice (e.g., 8080).<br/>
- Now, open https://<bastion-ip>:<your-port> in your browser.
 
+Login: **Username:** `admin` | **Password:** output from above
 
-Get the Argo CD Admin Password<br/>
-```bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
-```
-1. Log in to the Argo CD GUI
-* Username: admin
-* Password: (Use the decoded password from the previous command)
+#### Create ArgoCD Application
 
-2. Update Your Password
-* On the left panel of Argo CD GUI, click on "User Info"
-* Select Update Password and change it.
+**New App** in ArgoCD UI:
 
-### **Deploy Your Application in Argo CD GUI**<br/>
+| Field | Value |
+|---|---|
+| Application Name | `easyshop` |
+| Project | `default` |
+| Sync Policy | `Automatic` |
+| Repo URL | `https://github.com/snehabasuthkar108/easyshop-devsecops-gitops` |
+| Path | `kubernetes` |
+| Cluster URL | `https://kubernetes.default.svc` |
+| Namespace | `easyshop` |
 
-> 1. On the Argo CD homepage, click on the “New App” button.<br/>
+Click **Create** — ArgoCD will sync and deploy automatically. On every Jenkins pipeline run, the manifest is updated in Git and ArgoCD redeploys without any manual trigger.
 
-> 2. Fill in the following details:<br/>
->  -  **Application Name:**
-> `Enter your desired app name`
->  -  **Project Name:**
-> Select `default` from the dropdown.
->    * **Sync Policy:**
-> Choose `Automatic`.
+---
 
-> 3. In the `Source` section:
-> - **Repo URL:**
-> Add the Git repository URL that contains your Kubernetes manifests.
-> - **Path:** 
- `Kubernetes` (or the actual path inside the repo where your manifests reside)
+### 4. Nginx Ingress Controller
 
-> 4. In the “Destination” section:
->  -  **Cluster URL:**
- https://kubernetes.default.svc (usually shown as "default")
->  -    **Namespace:**
- tws-e-commerce-app (or your desired namespace)
-
-> 5. Click on “Create”.
-
-## Nginx ingress controller:<br/>
-> 1. Install the Nginx Ingress Controller using Helm:
 ```bash
 kubectl create namespace ingress-nginx
-```
-> 2. Add the Nginx Ingress Controller Helm repository:
-```bash
+
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
-```
-> 3. Install the Nginx Ingress Controller:
-```bash
+
 helm install nginx-ingress ingress-nginx/ingress-nginx \
   --namespace ingress-nginx \
   --set controller.service.type=LoadBalancer
-```
-> 4. Check the status of the Nginx Ingress Controller:
-```bash
+
+# Verify
 kubectl get pods -n ingress-nginx
-```
-> 5. Get the external IP address of the LoadBalancer service:
-```bash
 kubectl get svc -n ingress-nginx
 ```
 
-## Install Cert-Manager
+---
 
-> 1. **Jetpack:** Add the Jetstack Helm repository:
+### 5. TLS with Cert-Manager
+
 ```bash
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
-```
-> 2. **Cert-Manager:** Install the Cert-Manager Helm chart:
-```bash
+
 helm install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
   --version v1.12.0 \
   --set installCRDs=true
-``` 
-> 3. **Check pods:**Check the status of the Cert-Manager pods:
-```bash
+
 kubectl get pods -n cert-manager
 ```
 
-> 4. **DNS Setup:** Find your DNS name from the LoadBalancer service:
+#### Get LoadBalancer DNS & Configure Domain
+
 ```bash
-kubectl get svc nginx-ingress-ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+kubectl get svc nginx-ingress-ingress-nginx-controller -n ingress-nginx \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
-> 5. Create a DNS record for your domain pointing to the LoadBalancer IP.
-> - Go to your godaddy dashboard and create a new CNAME record and map the DNS just your got in the terminal.
 
+Create a **CNAME record** in your DNS provider pointing your domain to this hostname.
 
-### **HTTPS:**
-> #### 1. **Update your manifests to enable HTTPS:**
-> > `04-configmap.yaml`
-> > ```bash
-> > apiVersion: v1
-> > kind: ConfigMap
-> > metadata:
-> >   name: easyshop-config
-> >   namespace: easyshop
-> > data:
-> >   MONGODB_URI: "mongodb://mongodb-service:27017/easyshop"
-> >   NODE_ENV: "production"
-> >   NEXT_PUBLIC_API_URL: "https://easyshop.letsdeployit.com/api"
-> >   NEXTAUTH_URL: "https://easyshop.letsdeployit.com/"
-> >   NEXTAUTH_SECRET: "HmaFjYZ2jbUK7Ef+wZrBiJei4ZNGBAJ5IdiOGAyQegw="
-> >   JWT_SECRET: "e5e425764a34a2117ec2028bd53d6f1388e7b90aeae9fa7735f2469ea3a6cc8c"
-> > ```
+#### Update ConfigMap with Your Domain
 
-> #### 2. **Update your manifests to enable HTTPS:**
-> > `10-ingress.yaml`
-> > ```bash
-> > apiVersion: networking.k8s.io/v1
-> > kind: Ingress
-> > metadata:
-> >   name: easyshop-ingress
-> >   namespace: easyshop
-> >   annotations:
-> >     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-> >     kubernetes.io/ingress.class: "nginx"
-> >     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-> >     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-> > spec:
-> >   tls:
-> >   - hosts:
-> >     - easyshop.letsdeployit.com
-> >     secretName: easyshop-tls
-> >   rules:
-> >   - host: easyshop.letsdeployit.com
-> >     http:
-> >       paths:
-> >       - path: /
-> >         pathType: Prefix
-> >         backend:
-> >           service:
-> >             name: easyshop-service
-> >             port:
-> >               number: 80
-> > ```
+In `kubernetes/04-configmap.yaml`:
 
-> #### 3. **Apply your manifests:**
-> ```bash
-> kubectl apply -f 00-cluster-issuer.yaml
-> kubectl apply -f 04-configmap.yaml
-> kubectl apply -f 10-ingress.yaml
-> ```
+```yaml
+NEXT_PUBLIC_API_URL: "https://<your-domain>/api"
+NEXTAUTH_URL: "https://<your-domain>/"
+```
 
-> #### 4. **Commands to check the status:**
->
->> ```bash
->> kubectl get certificate -n easyshop
->> ```
+#### Apply HTTPS Manifests
 
->> ```bash
->> kubectl describe certificate easyshop-tls -n easyshop
->> ```
->
->> ```bash
->> kubectl logs -n cert-manager -l app=cert-manager
->> ```
->
->> ```bash
->> kubectl get challenges -n easyshop
->> ```
->
->> ```bash
->> kubectl describe challenges -n easyshop
->> ```
+```bash
+kubectl apply -f kubernetes/00-cluster-issuer.yaml
+kubectl apply -f kubernetes/04-configmap.yaml
+kubectl apply -f kubernetes/10-ingress.yaml
+```
 
-## **Congratulations!** <br/>
-![EasyShop Website Screenshot](./public/Deployed.png)
+#### Verify TLS Certificate
 
-### Your project is now deployed.
+```bash
+kubectl get certificate -n easyshop
+kubectl describe certificate easyshop-tls -n easyshop
+kubectl get challenges -n easyshop
+kubectl logs -n cert-manager -l app=cert-manager
+```
+
+---
+
+## 💻 Local Development with Docker Compose
+
+```bash
+# Clone the repo
+git clone https://github.com/snehabasuthkar108/easyshop-devsecops-gitops.git
+cd easyshop-devsecops-gitops
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local — set MONGODB_URI, NEXTAUTH_SECRET, JWT_SECRET
+
+# Build and start all services
+docker compose up --build
+```
+
+Services started:
+1. **MongoDB 7.0** — waits until healthy (mongosh ping check)
+2. **Migration** — runs DB seed/migration, exits on success
+3. **App (EasyShop)** — starts after migration completes, available at `http://localhost:3000`
+
+---
+
+## 📸 Deployment
+
+![EasyShop Deployed on EKS](./public/Deployed.png)
+
+---
+
+## ✅ What This Project Demonstrates
+
+| Area | Capability |
+|---|---|
+| CI/CD | 10-stage Jenkins pipeline with webhook trigger |
+| Security | Trivy FS + image scan, SonarQube, non-root containers |
+| GitOps | ArgoCD auto-sync from Git — zero manual deploys |
+| IaC | Full AWS stack via Terraform |
+| Kubernetes | 10+ K8s resource types, HPA, StatefulSet, Ingress, TLS |
+| Containers | Multi-stage Docker build, Docker Compose local dev |
+| Cloud | AWS EKS, VPC, ALB, EBS, NAT Gateway |
+
+---
+
+## 👩‍💻 Author
+
+**Sneha Basuthkar**  
+Cloud & Infrastructure Engineer
+🔗 [GitHub](https://github.com/snehabasuthkar108) | 📍 Hyderabad, India
+
+---
+
