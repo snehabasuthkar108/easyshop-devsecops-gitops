@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: db-migration
+  namespace: easyshop
+
+spec:
+  template:
+    spec:
+      containers:
+        - name: migration
+
+          image: sneha108/easy-shop-migration:latest
+          imagePullPolicy: Always
+
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: easyshop-config
+                  key: MONGODB_URI
+
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+
+      restartPolicy: OnFailure

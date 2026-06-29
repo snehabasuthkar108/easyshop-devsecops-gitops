@@ -1,0 +1,35 @@
+# Migration Container
+
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy migration scripts and data
+COPY scripts ./scripts
+COPY .db ./.db
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Set ownership
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Environment
+ENV NODE_ENV=production
+
+# Run migration
+CMD ["npx", "ts-node", "--project", "scripts/tsconfig.json", "scripts/migrate-data.ts"]
