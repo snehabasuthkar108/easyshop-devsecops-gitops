@@ -22,7 +22,7 @@ spec:
       containers:
         - name: easyshop
 
-          image: sneha108/easyshop-app:latest
+          image: sneha108/easy-shop-app:latest
           imagePullPolicy: Always
 
           ports:
