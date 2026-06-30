@@ -6,6 +6,9 @@ module "eks" {
   cluster_name                   = local.name
   cluster_endpoint_public_access = true
 
+  # Enable IAM Roles for Service Accounts (IRSA)
+  enable_irsa = true
+
   cluster_addons = {
 
     coredns = {
@@ -19,13 +22,17 @@ module "eks" {
     vpc-cni = {
       most_recent = true
     }
+
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
   }
 
   vpc_id                   = module.vpc.vpc_id
   subnet_ids               = module.vpc.public_subnets
   control_plane_subnet_ids = module.vpc.intra_subnets
 
-  # Default settings for all node groups
   eks_managed_node_group_defaults = {
 
     instance_types = ["t3.small"]
@@ -35,30 +42,56 @@ module "eks" {
 
   eks_managed_node_groups = {
 
-    easyshop-ng = {
+  easyshop-ng = {
 
-      min_size     = 2
-      max_size     = 3
-      desired_size = 2
+    min_size     = 2
+    desired_size = 3
+    max_size     = 4
 
-      instance_types = ["t3.small"]
+    instance_types = ["t3.small"]
 
-      capacity_type = "SPOT"
+    capacity_type = "ON_DEMAND"
 
-      disk_size = 35
+    disk_size = 35
 
-      use_custom_launch_template = false
+    use_custom_launch_template = false
 
-      tags = {
-        Name        = "easyshop-ng"
-        Environment = "dev"
-        Project     = "EasyShop-DevSecOps"
-      }
+    tags = {
+      Name        = "easyshop-ng"
+      Environment = "dev"
+      Project     = "EasyShop-DevSecOps"
     }
   }
-
-  tags = local.tags
 }
+}
+#########################################################
+# IAM Role for EBS CSI Driver (IRSA)
+#########################################################
+
+module "ebs_csi_irsa_role" {
+
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
+
+  role_name             = "${local.name}-ebs-csi-driver"
+  attach_ebs_csi_policy = true
+
+  oidc_providers = {
+
+    eks = {
+
+      provider_arn = module.eks.oidc_provider_arn
+
+      namespace_service_accounts = [
+        "kube-system:ebs-csi-controller-sa"
+      ]
+    }
+  }
+}
+
+#########################################################
+# Running EC2 Instances
+#########################################################
 
 data "aws_instances" "eks_nodes" {
 
