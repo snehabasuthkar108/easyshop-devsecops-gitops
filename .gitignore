@@ -96,3 +96,6 @@ terra-key
 
 # Local helper files
 alb-trust-policy.json
+
+#Sonar scanner
+.scannerwork/
