@@ -55,33 +55,108 @@ This README documents the platform as it's actually built and run, not as a theo
 ## 🏗️ Architecture
 
 ```mermaid
-flowchart TD
-    A[👩‍💻 Developer] -->|git push| B[GitHub Repository]
-    B -->|Webhook via ngrok| C[Jenkins Pipeline]
-    C --> D[Checkout Source Code]
-    D --> E[Install Dependencies]
-    E --> F[Run Unit Tests]
-    F --> G[SonarQube Static Analysis]
-    G --> H[Trivy Filesystem Scan]
-    H --> I[Docker Image Build]
-    I --> J[Trivy Image Scan]
-    J --> K[Push Image to Docker Hub]
-    K --> L[Update K8s Manifest]
-    L --> M[Commit Manifest to GitHub]
-    M --> N[ArgoCD Detects Git Change]
-    N --> O[Automatic Sync]
-    O --> P[Deploy to AWS EKS]
-    P --> Q[App Served via AWS ALB]
+flowchart TB
+    User(["🌐 End User"])
 
-    style A fill:#e1f5fe
-    style C fill:#ffebee
-    style G fill:#e8f5e9
-    style H fill:#e8f5e9
-    style J fill:#e8f5e9
-    style N fill:#fff3e0
-    style P fill:#f3e5f5
-    style Q fill:#e0f2f1
+    subgraph DevZone["💻 Local Dev Environment — WSL Ubuntu"]
+        direction TB
+        Dev["👩‍💻 Developer"]
+        Jenkins["⚙️ Jenkins\n(CI Orchestrator)"]
+        Sonar["🔍 SonarQube\n(SAST + Quality Gate)"]
+        Ngrok["🔗 ngrok tunnel\n(public webhook endpoint)"]
+        Dev -->|git push| Jenkins
+        Jenkins <-->|scan request/result| Sonar
+    end
+
+    subgraph GitHubZone["🐙 GitHub"]
+        direction TB
+        AppRepo[("App Source\n+ K8s Manifests")]
+        Webhook{{"Push Event\nWebhook"}}
+        AppRepo --> Webhook
+    end
+
+    Registry[("🐳 Docker Hub\nImage Registry")]
+
+    subgraph AWSZone["☁️ AWS Account — us-east-1"]
+        direction TB
+
+        subgraph VPCZone["VPC (Custom CIDR)"]
+            direction TB
+
+            subgraph PublicSubnet["Public Subnet"]
+                IGW["Internet Gateway"]
+                ALB["⚖️ Application Load Balancer\n(internet-facing)"]
+                NAT["NAT Gateway"]
+            end
+
+            subgraph PrivateSubnet["Private Subnet"]
+                subgraph EKSCluster["EKS Cluster: easyshop-eks-cluster"]
+                    direction TB
+                    LBController["AWS LB Controller"]
+                    ArgoCD["🔁 ArgoCD\n(GitOps Controller)"]
+
+                    subgraph NodeGroup["Node Group — t3.small SPOT"]
+                        direction LR
+                        Pod1["App Pod"]
+                        Pod2["App Pod"]
+                        HPA{{"HPA\nmax 3 replicas\n70% CPU target"}}
+                    end
+
+                    Mongo[("MongoDB\nStatefulSet")]
+                    PVC["PVC — gp3, 5Gi\n(EBS CSI Driver)"]
+
+                    HPA -.->|scales| Pod1
+                    HPA -.->|scales| Pod2
+                    LBController -->|provisions| ALB
+                    ArgoCD -->|deploys/syncs| Pod1
+                    ArgoCD -->|deploys/syncs| Pod2
+                    ArgoCD -->|deploys/syncs| Mongo
+                    Pod1 --> Mongo
+                    Pod2 --> Mongo
+                    Mongo --> PVC
+                end
+            end
+
+            IGW --> PublicSubnet
+            PrivateSubnet -->|outbound only| NAT --> IGW
+        end
+
+        IAM["🔑 IAM Roles\n(IRSA: LB Controller, EBS CSI, Node Role)"]
+        IAM -.->|scoped permissions| EKSCluster
+    end
+
+    %% Cross-zone flows
+    Jenkins -->|"① exposes webhook via"| Ngrok
+    Webhook -->|"② HTTPS POST"| Ngrok
+    Jenkins -->|"③ Trivy FS + Image scan\n(gate before push)"| Registry
+    Jenkins -->|"④ commit updated image tag"| AppRepo
+    ArgoCD -->|"⑤ polls / webhook"| AppRepo
+    ArgoCD -->|"⑥ pulls image"| Registry
+    User -->|"⑦ HTTPS"| ALB
+    ALB --> Pod1
+    ALB --> Pod2
+
+    classDef zone fill:#0d1117,stroke:#30363d,color:#c9d1d9
+    classDef dev fill:#1a2f3a,stroke:#39a0ed,color:#e6f4ff
+    classDef security fill:#2e1a1a,stroke:#f85149,color:#ffdcd7
+    classDef gitops fill:#1a2e1a,stroke:#3fb950,color:#d7f5df
+    classDef aws fill:#2a2416,stroke:#e3b341,color:#fff3cf
+    classDef external fill:#241a2e,stroke:#a371f7,color:#eaddff
+
+    class DevZone dev
+    class Sonar,Jenkins security
+    class ArgoCD,Webhook gitops
+    class AWSZone,VPCZone,PublicSubnet,PrivateSubnet,EKSCluster,NodeGroup aws
+    class User,Registry,GitHubZone external
 ```
+
+**What this adds over a simple pipeline arrow-chain:**
+
+- **Trust boundaries are explicit** — `DevZone`, `GitHubZone`, and `AWSZone` are separate subgraphs because they *are* separate security domains with different network reachability rules, not just "steps."
+- **The two webhook directions are numbered (①–⑦)** so it's clear which calls are inbound-to-Jenkins (needs ngrok) versus outbound-from-cluster (doesn't).
+- **Private subnet has no direct route to the internet** — only outbound via NAT Gateway, which is why the EKS nodes/pods themselves are never directly exposed; only the ALB in the public subnet is internet-facing.
+- **IAM is shown as a cross-cutting concern (IRSA)** scoped to specific controllers (LB Controller, EBS CSI Driver, node role) rather than one blanket cluster-admin role — this is the kind of detail that signals real production awareness in an interview.
+- **HPA and ArgoCD are drawn as active controllers**, not passive boxes — HPA scales pods based on CPU, ArgoCD continuously reconciles pod/StatefulSet state against Git.
 
 The two loops that matter here are easy to miss on a first read, so it's worth calling them out explicitly:
 
