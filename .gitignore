@@ -92,4 +92,7 @@ terraform.tfstate.backup
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terra-key.pub
-terra-key
+terra-key 
+
+# Local helper files
+alb-trust-policy.json

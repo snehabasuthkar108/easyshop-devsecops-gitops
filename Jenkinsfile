@@ -9,9 +9,9 @@ pipeline {
 
         IMAGE_TAG = "${BUILD_NUMBER}"
 
-        DOCKER_CREDENTIALS = "docker-hub-credentials"
+        DOCKER_CREDENTIALS = "docker-hub-creds"
 
-        SONARQUBE_SERVER = "sonarqube"
+        SONARQUBE_SERVER = "sonar"
 
         GIT_REPO = "https://github.com/snehabasuthkar108/easyshop-devsecops-gitops.git"
     }
@@ -44,24 +44,23 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+    steps {
+        script {
+            def scannerHome = tool 'sonar'
 
-            steps {
-
-                withSonarQubeEnv('sonarqube') {
-
-                    sh '''
-                    npm install
-
-                    sonar-scanner \
-                    -Dsonar.projectKey=easyshop \
-                    -Dsonar.projectName=easyshop \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=$SONAR_HOST_URL \
-                    -Dsonar.login=$SONAR_AUTH_TOKEN
-                    '''
-                }
+            withSonarQubeEnv('sonar') {
+                sh """
+                ${scannerHome}/bin/sonar-scanner \
+                -Dsonar.projectKey=easyshop \
+                -Dsonar.projectName=easyshop \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=\$SONAR_HOST_URL \
+                -Dsonar.login=\$SONAR_AUTH_TOKEN
+                """
             }
         }
+    }
+}
 
         stage('Trivy File System Scan') {
 
