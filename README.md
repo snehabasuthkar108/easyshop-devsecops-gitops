@@ -14,6 +14,8 @@
 [![Trivy](https://img.shields.io/badge/Security-Trivy-1904DA?logo=aqua)](https://aquasecurity.github.io/trivy/)
 [![Docker](https://img.shields.io/badge/Container-Docker-2496ED?logo=docker)](https://www.docker.com/)
 [![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-326CE5?logo=kubernetes)](https://kubernetes.io/)
+[![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C?logo=prometheus)](https://prometheus.io/)
+[![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46800?logo=grafana)](https://grafana.com/)
 [![Next.js](https://img.shields.io/badge/App-Next.js%2014-000000?logo=next.js)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](#license)
 
@@ -46,6 +48,7 @@ This README documents the platform as it's actually built and run, not as a theo
 - [Project Structure](#-project-structure)
 - [Deployment Guide](#-deployment-guide)
 - [Screenshots](#-screenshots)
+- [Monitoring & Observability](#-monitoring--observability-phase-2)
 - [Troubleshooting](#-troubleshooting)
 - [Learning Outcomes](#-learning-outcomes)
 - [Future Enhancements](#-future-enhancements)
@@ -185,6 +188,13 @@ Jenkins never talks to the cluster directly. It only ever commits an updated ima
 | **Security Scanning** | Trivy | Filesystem and container image vulnerability scanning |
 | **Database** | MongoDB 7.0 | Application data store |
 | **Application** | Next.js 14 + TypeScript | E-commerce frontend/backend |
+| **Package Manager** | Helm | Deploying the monitoring stack chart |
+| **Metrics Collection** | Prometheus | Cluster and workload metrics scraping |
+| **Visualization** | Grafana | Pre-provisioned dashboards for cluster/node/pod/workload metrics |
+| **Alerting** | Alertmanager | Alert routing and management |
+| **Operator** | Prometheus Operator | Manages Prometheus resources declaratively |
+| **Object Metrics** | kube-state-metrics | Kubernetes object state metrics |
+| **Node Metrics** | Node Exporter | Host-level CPU, memory, disk, network metrics |
 
 ---
 
@@ -547,6 +557,171 @@ Hit the ALB DNS name in your browser to confirm the app is live.
 
 ---
 
+## 📊 Monitoring & Observability (Phase 2)
+
+### Overview
+
+After successfully deploying the application through GitOps, I extended the platform with a production-style monitoring stack on Amazon EKS using **Prometheus** and **Grafana**. This phase adds full visibility into the cluster, its infrastructure resources, and the EasyShop application workloads — turning a "deploy and hope" pipeline into one with real observability behind it.
+
+### Monitoring Stack
+
+Installed via Helm using the `kube-prometheus-stack` chart, into a dedicated `monitoring` namespace.
+
+| Component | Purpose |
+|---|---|
+| **Prometheus** | Metrics collection |
+| **Grafana** | Visualization dashboards |
+| **Alertmanager** | Alert management |
+| **Prometheus Operator** | Manages Prometheus resources |
+| **kube-state-metrics** | Kubernetes object metrics |
+| **Node Exporter** | Node CPU, memory, disk, and network metrics |
+
+<details>
+<summary><b>Installation commands</b></summary>
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+kubectl create namespace monitoring
+
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --wait \
+  --timeout 15m
+```
+
+The `--wait` flag holds the install until every component in the chart — Prometheus, Grafana, Alertmanager, and the operator — reports healthy, rather than returning as soon as manifests are applied.
+</details>
+
+<details>
+<summary><b>Verification commands</b></summary>
+
+```bash
+helm list -n monitoring
+kubectl get pods -n monitoring
+kubectl get svc -n monitoring
+kubectl get servicemonitors -n monitoring
+```
+
+All components were verified healthy and running before moving on to dashboard configuration.
+</details>
+
+### Prometheus
+
+Prometheus automatically discovers Kubernetes resources through **ServiceMonitors**, rather than requiring manual scrape config for every workload. Verified via **Status → Targets** in the Prometheus UI, where all Kubernetes targets showed as `UP`.
+
+| | |
+|---|---|
+| **Prometheus Home** | ![Prometheus Home](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/02-prometheus-home.png) |
+| **Prometheus Targets** | ![Prometheus Targets](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/03-prometheus-targets.png) |
+
+### Grafana
+
+`kube-prometheus-stack` automatically wires Grafana to the Prometheus datasource and provisions a set of Kubernetes dashboards out of the box — no manual datasource configuration required. Accessed via the admin account.
+
+| | |
+|---|---|
+| **Grafana Home** | ![Grafana Home](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/01-grafana-home.png) |
+
+### Dashboards
+
+<details>
+<summary><b>Cluster Dashboard</b></summary>
+
+Monitors CPU utilization, memory utilization, cluster capacity, resource requests, and resource limits across the whole cluster.
+
+![Cluster Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/04-cluster-dashboard.png)
+</details>
+
+<details>
+<summary><b>Node Dashboard</b></summary>
+
+Shows per-node CPU, memory, network, disk, and pod utilization.
+
+![Node Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/05-node-dashboard.png)
+</details>
+
+<details>
+<summary><b>Pod Dashboard</b></summary>
+
+Cluster-wide pod-level view — CPU, memory, and status across all namespaces.
+
+![Pod Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/06-pod-dashboard.png)
+</details>
+
+<details>
+<summary><b>EasyShop Pod Dashboard</b></summary>
+
+Filtered to the `easyshop` namespace. Monitors pod CPU, memory, restarts, CPU throttling, and resource limits.
+
+![EasyShop Pod Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/07-easyshop-pod-dashboard.png)
+</details>
+
+<details>
+<summary><b>Workload Dashboard</b></summary>
+
+Shows deployments, replica counts, CPU, memory, and overall workload health.
+
+![Workload Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/08-workload-dashboard.png)
+</details>
+
+<details>
+<summary><b>Monitoring Stack Installation</b></summary>
+
+Helm install output confirming the `kube-prometheus-stack` deployed successfully into the `monitoring` namespace.
+
+![Monitoring Installation](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/09-monitoring-installation.png)
+</details>
+
+### Monitoring Architecture
+
+```mermaid
+flowchart TD
+    NodeExporter["Node Exporter"] --> Prometheus["Prometheus"]
+    KSM["kube-state-metrics"] --> Prometheus
+    K8s["Kubernetes API"] --> Prometheus
+    Prometheus --> Grafana["Grafana Dashboards"]
+    Prometheus --> Alertmanager["Alertmanager"]
+```
+
+### Benefits
+
+Adding this stack moves the platform from "it deployed successfully" to "I can see how it's actually behaving":
+
+- **Real-time monitoring** of cluster and application state
+- **Cluster health** visibility across nodes and workloads
+- **Capacity planning** grounded in actual resource usage, not guesswork
+- **Performance troubleshooting** with metrics history instead of point-in-time `kubectl` snapshots
+- **Infrastructure visibility** down to node-level CPU/memory/disk/network
+- **Application workload monitoring** scoped to the `easyshop` namespace
+- **Production-style observability** — the same pattern used in real on-call environments
+
+### Project Outcome
+
+With this phase complete, the platform now covers:
+
+✅ Infrastructure as Code &nbsp;&nbsp; ✅ CI Pipeline &nbsp;&nbsp; ✅ Security Scanning &nbsp;&nbsp; ✅ Containerization &nbsp;&nbsp; ✅ Kubernetes &nbsp;&nbsp; ✅ GitOps &nbsp;&nbsp; ✅ Monitoring &nbsp;&nbsp; ✅ Observability
+
+<details>
+<summary><b>📸 Monitoring Screenshots</b></summary>
+
+| | |
+|---|---|
+| **Grafana Home** | ![Grafana Home](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/01-grafana-home.png) |
+| **Prometheus Home** | ![Prometheus Home](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/02-prometheus-home.png) |
+| **Prometheus Targets** | ![Prometheus Targets](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/03-prometheus-targets.png) |
+| **Cluster Dashboard** | ![Cluster Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/04-cluster-dashboard.png) |
+| **Node Dashboard** | ![Node Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/05-node-dashboard.png) |
+| **Pod Dashboard** | ![Pod Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/06-pod-dashboard.png) |
+| **EasyShop Pod Dashboard** | ![EasyShop Pod Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/07-easyshop-pod-dashboard.png) |
+| **Workload Dashboard** | ![Workload Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/08-workload-dashboard.png) |
+| **Monitoring Installation** | ![Monitoring Installation](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/monitoring/09-monitoring-installation.png) |
+
+</details>
+
+---
+
 ## 🛠️ Troubleshooting
 
 <details>
@@ -618,7 +793,6 @@ Building this platform end-to-end reinforced several production DevOps concepts 
 |---|---|
 | GitHub Actions | Alternative/parallel CI for cloud-native workflows without local tunnel dependency |
 | OPA Gatekeeper / Kyverno | Policy-as-code enforcement on Kubernetes admissions |
-| Prometheus + Grafana | Cluster and application observability, metrics, alerting |
 | ELK Stack | Centralized logging and log analysis |
 | HashiCorp Vault / AWS Secrets Manager | Proper secrets management instead of K8s Secrets in plaintext base64 |
 | Slack Notifications | Pipeline status alerts to a team channel |
