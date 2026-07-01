@@ -37,6 +37,7 @@ This README documents the platform as it's actually built and run, not as a theo
 
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
+- [Features](#-features)
 - [CI/CD Pipeline Flow](#-cicd-pipeline-flow)
 - [Jenkins Pipeline Stages](#-jenkins-pipeline-stages)
 - [AWS Infrastructure](#-aws-infrastructure)
@@ -187,6 +188,26 @@ Jenkins never talks to the cluster directly. It only ever commits an updated ima
 
 ---
 
+## ✨ Features
+
+| | Capability |
+|---|---|
+| ✔ | Infrastructure provisioning fully automated via Terraform |
+| ✔ | Automated Jenkins CI pipeline triggered on every push |
+| ✔ | SonarQube static code analysis with an enforced quality gate |
+| ✔ | Trivy vulnerability scanning at both filesystem and image stages |
+| ✔ | Docker image build and versioned push to Docker Hub |
+| ✔ | GitOps workflow — Git as the single source of truth for cluster state |
+| ✔ | Automatic ArgoCD sync on manifest changes |
+| ✔ | Kubernetes-native deployment on AWS EKS |
+| ✔ | MongoDB StatefulSet with stable network identity |
+| ✔ | Persistent storage via `gp3`-backed PVC |
+| ✔ | Horizontal Pod Autoscaler (CPU-based, max 3 replicas) |
+| ✔ | Internet-facing ingress via AWS Application Load Balancer |
+| ✔ | End-to-end automation — a single `git push` triggers the full build-to-deploy chain |
+
+---
+
 ## 🔄 CI/CD Pipeline Flow
 
 ```mermaid
@@ -259,6 +280,23 @@ Provisioned entirely through Terraform:
 | **Ingress** | AWS Application Load Balancer (internet-facing), via AWS Load Balancer Controller |
 | **Storage** | EBS CSI Driver, `gp3` storage class |
 | **Security Groups** | Scoped to cluster and ALB traffic only |
+
+<details>
+<summary><b>Full list of AWS services in use</b></summary>
+
+- **VPC** — isolated network boundary for the entire platform
+- **Subnets** — public (ALB, NAT) and private (EKS nodes, pods, StatefulSet)
+- **Internet Gateway** — public subnet's route to/from the internet
+- **NAT Gateway** — outbound-only internet access for private subnet resources
+- **Route Tables** — traffic routing rules per subnet
+- **IAM Roles** — least-privilege roles for the control plane, node group, and IRSA-scoped service accounts
+- **EKS Cluster** — `easyshop-eks-cluster`, managed Kubernetes control plane
+- **AWS Load Balancer Controller** — provisions and manages the ALB from Kubernetes Ingress resources
+- **Application Load Balancer (ALB)** — internet-facing entry point for all application traffic
+- **Security Groups** — scoped firewall rules for cluster and ALB traffic
+- **EBS CSI Driver** — provisions `gp3` volumes backing the PersistentVolumeClaim
+
+</details>
 
 ```mermaid
 flowchart LR
