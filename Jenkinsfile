@@ -9,7 +9,7 @@ pipeline {
 
         IMAGE_TAG = "${BUILD_NUMBER}"
 
-        DOCKER_CREDENTIALS = "docker-hub-creds"
+        DOCKER_CREDENTIALS = "dockerhub-creds"
 
         SONARQUBE_SERVER = "sonar"
 
