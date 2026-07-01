@@ -381,23 +381,56 @@ Hit the ALB DNS name in your browser to confirm the app is live.
 
 ## 📸 Screenshots
 
-> Screenshots to be added.
+<details>
+<summary><b>🔧 CI Pipeline — Jenkins, SonarQube, Docker Hub</b></summary>
 
-| Section | Preview |
+| | |
 |---|---|
-| Architecture Diagram | _placeholder_ |
-| Terraform Apply Output | _placeholder_ |
-| Jenkins Dashboard | _placeholder_ |
-| Successful Jenkins Pipeline | _placeholder_ |
-| SonarQube Dashboard | _placeholder_ |
-| Trivy Scan Results | _placeholder_ |
-| Docker Hub Repository | _placeholder_ |
-| GitHub Manifest Update Commit | _placeholder_ |
-| ArgoCD Application View | _placeholder_ |
-| Kubernetes Pods | _placeholder_ |
-| Kubernetes Services | _placeholder_ |
-| Ingress / ALB | _placeholder_ |
-| Application Running | _placeholder_ |
+| **Jenkins Dashboard** | ![Jenkins Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/ci/jenkins-dashboard.png) |
+| **Successful Pipeline Run** | ![Jenkins Pipeline Success](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/ci/jenkins-pipeline-success.png) |
+| **SonarQube Dashboard** | ![SonarQube Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/ci/sonarqube-dashboard.png) |
+| **SonarQube Quality Gate** | ![SonarQube Quality Gate](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/ci/sonarqube-quality-gate.png) |
+| **Docker Hub Images** | ![Docker Hub Images](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/ci/dockerhub-images.png) |
+| **GitHub Manifest Update** | ![GitHub Manifest Update](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/ci/github-manifest-update.png) |
+
+</details>
+
+<details>
+<summary><b>🔁 CD / GitOps — ArgoCD</b></summary>
+
+| | |
+|---|---|
+| **ArgoCD Dashboard** | ![ArgoCD Dashboard](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/cd/argocd-dashboard.png) |
+| **ArgoCD Application Tree** | ![ArgoCD Application Tree](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/cd/argocd-application-tree.png) |
+| **ArgoCD Sync Status** | ![ArgoCD Sync Status](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/cd/argocd-sync-status.png) |
+
+</details>
+
+<details>
+<summary><b>☸️ Kubernetes — Cluster Resources</b></summary>
+
+| | |
+|---|---|
+| **Pods, Services & Ingress** | ![Pods Services Ingress](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/kubernetes/pods-services-ingress.png) |
+| **ALB Target Group** | ![ALB Target Group](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/kubernetes/alb-target-group.png) |
+| **Persistent Volume Claim** | ![Persistent Volume Claim](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/kubernetes/persistent-volume-claim.png) |
+| **DB Migration Job** | ![DB Migration Job](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/kubernetes/db-migration-job.png) |
+
+</details>
+
+<details>
+<summary><b>🛒 Application — EasyShop Live</b></summary>
+
+| | |
+|---|---|
+| **Home Page** | ![Home Page](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/application/home-page.png) |
+| **Products Page** | ![Products Page](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/application/products-page.png) |
+| **Application Overview** | ![Application Overview](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/application/application-overview.png) |
+| **Application Load Balancer** | ![Application Load Balancer](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/application/application-load-balancer.png) |
+
+</details>
+
+> **Note:** Your repo also has a `screenshots/terraform/` folder that wasn't visible in the file tree you shared — send me those filenames and I'll add a Terraform section (apply output, cluster creation, etc.) too.
 
 ---
 
