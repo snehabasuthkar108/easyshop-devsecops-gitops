@@ -16,10 +16,19 @@
 [![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-326CE5?logo=kubernetes)](https://kubernetes.io/)
 [![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C?logo=prometheus)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46800?logo=grafana)](https://grafana.com/)
-[![Next.js](https://img.shields.io/badge/App-Next.js%2014-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/App-Next.js%2014-white?logo=nextdotjs&logoColor=black)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](#license)
 
 </div>
+
+---
+
+## 🏆 Project Highlights
+
+✔ Terraform-provisioned AWS infrastructure &nbsp;&nbsp; ✔ Production-style Jenkins CI pipeline &nbsp;&nbsp; ✔ SonarQube static analysis
+✔ Trivy filesystem + image scanning &nbsp;&nbsp; ✔ Docker image build & push to Docker Hub &nbsp;&nbsp; ✔ GitHub webhook via ngrok (local Jenkins)
+✔ GitOps delivery with ArgoCD &nbsp;&nbsp; ✔ AWS Load Balancer Controller &nbsp;&nbsp; ✔ MongoDB StatefulSet with persistent storage
+✔ EBS CSI Driver (`gp3`) &nbsp;&nbsp; ✔ Horizontal Pod Autoscaler &nbsp;&nbsp; ✔ Prometheus monitoring & Grafana dashboards &nbsp;&nbsp; ✔ Alertmanager
 
 ---
 
@@ -367,7 +376,7 @@ This is a portfolio/demo cluster running on SPOT `t3.small` nodes — the cap re
 | **Trivy (Filesystem)** | Vulnerable dependencies in source code | Pre-build |
 | **Trivy (Image)** | CVEs in the final container image | Post-build, pre-push |
 
-The pipeline is designed so that a failing quality gate or a critical vulnerability finding **blocks the pipeline** — an insecure or low-quality build never reaches Docker Hub, let alone the cluster.
+SonarQube and Trivy scans run as gated stages before the image is pushed to Docker Hub — code quality and vulnerability findings are surfaced early in the pipeline, ahead of deployment. *(If your `Jenkinsfile` actually aborts the build on a failed quality gate or a Trivy `--exit-code 1`, tell me and I'll state that explicitly — right now this describes scans running in sequence, not an enforced hard gate.)*
 
 ---
 
@@ -771,6 +780,16 @@ Confirm the EBS CSI driver is installed and the `gp3` StorageClass exists in the
 
 Check StatefulSet pod logs for PVC mount errors or authentication failures against the Secret-provided credentials — StatefulSets fail fast and loudly if the volume isn't ready.
 </details>
+
+---
+
+## 🧩 Engineering Challenges Solved
+
+> ⚠️ **Placeholder — needs your input before publishing.** The items below are the *kinds* of issues a project like this commonly surfaces (IRSA/IAM setup for the LB Controller, EBS CSI provisioning, ArgoCD ApplicationSet CRD mismatches, Terraform destroy ordering with orphaned ALB security groups, Grafana admin auth resets). I have not fabricated these as things that happened to you — replace this list with the real issues you hit, even in one line each, and I'll write them up properly with root cause / resolution / lessons learned, matching the style of the Troubleshooting section above.
+
+- [ ] Issue 1 — what happened, how you diagnosed it, how you fixed it
+- [ ] Issue 2 — …
+- [ ] Issue 3 — …
 
 ---
 
