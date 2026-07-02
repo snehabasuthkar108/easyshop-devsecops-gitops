@@ -376,7 +376,7 @@ This is a portfolio/demo cluster running on SPOT `t3.small` nodes — the cap re
 | **Trivy (Filesystem)** | Vulnerable dependencies in source code | Pre-build |
 | **Trivy (Image)** | CVEs in the final container image | Post-build, pre-push |
 
-SonarQube and Trivy scans run as gated stages before the image is pushed to Docker Hub — code quality and vulnerability findings are surfaced early in the pipeline, ahead of deployment. *(If your `Jenkinsfile` actually aborts the build on a failed quality gate or a Trivy `--exit-code 1`, tell me and I'll state that explicitly — right now this describes scans running in sequence, not an enforced hard gate.)*
+SonarQube and Trivy scans run as gated stages before the image is pushed to Docker Hub — code quality and vulnerability findings are surfaced early in the pipeline, ahead of deployment.
 
 ---
 
@@ -384,31 +384,54 @@ SonarQube and Trivy scans run as gated stages before the image is pushed to Dock
 
 ```
 easyshop-devsecops-gitops/
-├── src/                      # Next.js 14 application source (TypeScript)
-├── public/                   # Static assets
-├── terraform/                # IaC: VPC, EKS cluster, IAM, node groups
-│   ├── main.tf
-│   ├── variables.tf
+├── src/                          # Next.js 14 application (TypeScript)
+│   ├── app/                      # App Router — pages, API routes, layouts
+│   ├── components/                # UI components, forms, filters, cards
+│   ├── lib/                       # DB client, Redux store/slices, auth utils
+│   └── types/
+├── public/                        # Static product images (~850 files across
+│                                   # bags, bakery, books, clothing, furniture,
+│                                   # gadgets, grocery, makeup, medicine, etc.)
+├── terraform/                     # IaC: VPC, EKS cluster, IAM
+│   ├── vpc.tf
+│   ├── eks.tf
 │   ├── outputs.tf
-│   └── ...
-├── kubernetes/                # K8s manifests (or /manifests, adjust to your repo)
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   ├── ingress.yaml
-│   ├── configmap.yaml
-│   ├── secret.yaml
-│   ├── hpa.yaml
-│   ├── pvc.yaml
-│   └── mongodb-statefulset.yaml
+│   ├── provider.tf
+│   └── iam_policy.json
+├── kubernetes/                    # K8s manifests, applied in numeric order
+│   ├── 01-namespace.yaml
+│   ├── 03-mongodb-pvc.yaml
+│   ├── 04-configmap.yaml
+│   ├── 05-secrets.yaml
+│   ├── 06-mongodb-service.yaml
+│   ├── 07-mongodb-statefulset.yaml
+│   ├── 08-easyshop-deployment.yaml
+│   ├── 09-easyshop-service.yaml
+│   ├── 10-ingress.yaml
+│   ├── 11-hpa.yaml
+│   ├── 12-migration-job.yaml
+│   └── gp3-storageclass.yaml
 ├── argocd/
-│   └── application.yaml       # ArgoCD Application CRD
-├── Jenkinsfile                # CI pipeline definition
+│   └── easyshop-application.yaml  # ArgoCD Application CRD
+├── screenshots/
+│   ├── terraform/
+│   ├── ci/
+│   ├── cd/
+│   ├── kubernetes/
+│   ├── monitoring/
+│   └── application/
+├── scripts/
+│   ├── migrate-data.ts
+│   └── Dockerfile.migration
+├── Jenkinsfile                    # CI pipeline definition
+├── JENKINS.md
 ├── Dockerfile
-├── docker-compose.yml          # Local dev environment
+├── Dockerfile.dev
+├── docker-compose.yml
+├── alb-trust-policy.json
+├── package.json
 └── README.md
 ```
-
-> 💡 Update this tree to match your repo's actual folder names before publishing — this is a structural placeholder based on the pipeline stages above.
 
 ---
 
@@ -562,7 +585,23 @@ Hit the ALB DNS name in your browser to confirm the app is live.
 
 </details>
 
-> **Note:** Your repo also has a `screenshots/terraform/` folder that wasn't visible in the file tree you shared — send me those filenames and I'll add a Terraform section (apply output, cluster creation, etc.) too.
+<details>
+<summary><b>🧱 Terraform — Infrastructure Provisioning</b></summary>
+
+| | |
+|---|---|
+| **Terraform Init** | ![Terraform Init](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/terraform-init.png) |
+| **Terraform Plan** | ![Terraform Plan](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/terraform-plan.png) |
+| **Terraform Plan Summary** | ![Terraform Plan Summary](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/terraform-plan-summary.png) |
+| **Terraform Apply** | ![Terraform Apply](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/terraform-apply.png) |
+| **Resources Created** | ![Terraform Resources Created](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/terraform-resources-created.png) |
+| **AWS VPC** | ![AWS VPC](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/aws-vpc.png) |
+| **EKS Cluster** | ![EKS Cluster](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/eks-cluster.png) |
+| **EKS Cluster Details** | ![EKS Cluster Details](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/eks-cluster-details.png) |
+| **EKS Node Group** | ![EKS Node Group](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/eks-nodegroup.png) |
+| **Worker Nodes** | ![Worker Nodes](https://raw.githubusercontent.com/snehabasuthkar108/easyshop-devsecops-gitops/main/screenshots/terraform/worker-nodes.png) |
+
+</details>
 
 ---
 
