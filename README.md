@@ -16,7 +16,7 @@
 [![Kubernetes](https://img.shields.io/badge/Orchestration-Kubernetes-326CE5?logo=kubernetes)](https://kubernetes.io/)
 [![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C?logo=prometheus)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46800?logo=grafana)](https://grafana.com/)
-[![Next.js](https://img.shields.io/badge/App-Next.js%2014-000000?logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/App-Next.js%2014-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](#license)
 
 </div>
